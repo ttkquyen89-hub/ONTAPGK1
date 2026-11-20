@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phiếu Học Tập Ôn Tập Giữa Học Kì I - KHTN 7</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Be Vietnam Pro for crisp Vietnamese diacritics -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: linear-gradient(160deg, #f1faf4 0%, #f9fbf7 50%, #eef7f3 100%);
+    }
+
+    /* Tựa bài cam đậm in 3D nổi bật */
+    .title-3d-orange {
+      font-weight: 900;
+      color: #c2410c;
+      letter-spacing: 0.03em;
+      text-shadow:
+        0 1px 0 #ea580c,
+        0 2px 0 #c2410c,
+        0 3px 0 #9a3412,
+        0 4px 0 #7c2d12,
+        0 5px 0 #6c240e,
+        0 6px 1px rgba(124, 45, 18, 0.2),
+        0 8px 14px rgba(154, 52, 18, 0.3);
+    }
+
+    /* Ô chọn từ dropdown inline gọn đẹp, rõ ràng */
+    .blank-select {
+      display: inline-block;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      border: 2px dashed #64748b;
+      background-color: #ffffff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 0.95rem 0.95rem;
+      border-radius: 0.65rem;
+      padding: 0.25rem 1.85rem 0.25rem 0.65rem;
+      margin: 0.15rem 0.2rem;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      max-width: 100%;
+    }
+
+    .blank-select:hover {
+      border-color: #ea580c;
+      background-color: #fffaf5;
+    }
+
+    .blank-select:focus {
+      outline: none;
+      border-style: solid;
+      border-color: #ea580c;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.16);
+    }
+
+    .blank-select.is-placeholder {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .blank-select.is-correct {
+      border: 2px solid #10b981 !important;
+      background-color: #ecfdf5 !important;
+      color: #065f46 !important;
+    }
+
+    .blank-select.is-wrong {
+      border: 2px solid #f43f5e !important;
+      background-color: #fff1f2 !important;
+      color: #9f1239 !important;
+    }
+
+    /* Hiệu ứng mở gợi ý mượt */
+    .hint-box {
+      animation: fadeSlideDown 0.2s ease-out;
+    }
+
+    @keyframes fadeSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Canvas pháo hoa không cản trở tương tác */
+    #fireworksCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 60;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased pb-16">
+  <!-- Canvas hiệu ứng pháo hoa khi đạt điểm cao -->
+  <canvas id="fireworksCanvas"></canvas>
+
+  <!-- Thanh tiến độ & điều khiển cố định (Sticky Header) -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-200/80 shadow-sm">
+    <div class="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
+      <!-- Tiến độ hoàn thành -->
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-orange-100 text-orange-700 font-bold text-sm">
+            📝
+          </span>
+          <div class="text-sm font-semibold text-slate-700">
+            Đã chọn: <span id="filledCount" class="text-orange-600 font-extrabold">0</span> / <span id="totalCount">71</span> ô
+          </div>
+        </div>
+        <div class="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden min-w-[80px]">
+          <div id="progressBar" class="h-full bg-gradient-to-r from-orange-400 to-emerald-500 rounded-full transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Các nút chức năng -->
+      <div class="flex flex-wrap items-center gap-2 shrink-0">
+        <button
+          id="btnCheck"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] text-white font-bold text-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <span>✅</span> Chấm điểm
+        </button>
+
+        <button
+          id="btnShowAllAnswers"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 active:scale-[0.98] text-emerald-900 font-semibold text-sm border border-emerald-300 transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <span>👁️</span> Xem đáp án toàn phiếu
+        </button>
+
+        <button
+          id="btnReset"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 font-semibold text-sm border border-slate-300 transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <span>🔄</span> Làm lại
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nội dung chính của phiếu học tập -->
+  <main class="max-w-5xl mx-auto px-3 sm:px-6 pt-6 sm:pt-8 space-y-6">
+    <!-- Khung tiêu đề & thông tin học sinh -->
+    <section class="bg-white/95 rounded-3xl border border-orange-200/80 shadow-md p-5 sm:p-8 text-center relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-36 h-36 bg-orange-100/60 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-10 -left-10 w-36 h-36 bg-emerald-100/60 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="relative z-10">
+        <h1 class="title-3d-orange text-2xl sm:text-4xl md:text-[2.6rem] leading-tight uppercase">
+          PHIẾU HỌC TẬP ÔN TẬP GIỮA HỌC KÌ I
+        </h1>
+        <p class="mt-3 text-base sm:text-xl font-extrabold text-slate-800 tracking-wide">
+          MÔN KHOA HỌC TỰ NHIÊN 7 – PHẦN LÍ THUYẾT
+        </p>
+        <p class="mt-1.5 text-sm sm:text-base font-medium text-emerald-800 bg-emerald-50 inline-block px-4 py-1 rounded-full border border-emerald-200">
+          Phạm vi: Từ bài Mở đầu đến bài Đo tốc độ
+        </p>
+
+        <!-- Khu vực nhập thông tin học sinh -->
+        <div class="mt-6 pt-5 border-t border-slate-200/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 text-left sm:text-center">
+          <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 flex-1 max-w-md mx-auto sm:mx-0">
+            <span class="font-bold text-slate-700 whitespace-nowrap">Họ và tên:</span>
+            <input
+              id="studentName"
+              type="text"
+              placeholder="Nhập họ và tên..."
+              class="w-full bg-transparent border-b-2 border-dashed border-slate-300 focus:border-orange-500 focus:outline-none px-1.5 py-0.5 font-semibold text-slate-800"
+            />
+          </label>
+
+          <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 sm:w-44 mx-auto sm:mx-0">
+            <span class="font-bold text-slate-700 whitespace-nowrap">Lớp: 7</span>
+            <input
+              id="studentClass"
+              type="text"
+              placeholder="A1..."
+              maxlength="8"
+              class="w-full bg-transparent border-b-2 border-dashed border-slate-300 focus:border-orange-500 focus:outline-none px-1.5 py-0.5 font-semibold text-slate-800"
+            />
+          </label>
+        </div>
+
+        <p class="mt-4 text-sm sm:text-base italic text-slate-600">
+          <strong class="not-italic text-slate-800">Yêu cầu:</strong> Chọn từ, cụm từ, số hoặc công thức thích hợp để điền vào chỗ trống.
+        </p>
+      </div>
+    </section>
+
+    <!-- Khung tổng kết điểm số (ẩn cho tới khi bấm Chấm điểm) -->
+    <section id="resultBanner" class="hidden rounded-3xl border-2 p-5 sm:p-6 shadow-md transition-all">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4 text-center sm:text-left">
+          <div id="resultEmoji" class="text-5xl select-none">🎉</div>
+          <div>
+            <h2 id="resultTitle" class="text-xl sm:text-2xl font-extrabold text-slate-800">Kết quả làm bài</h2>
+            <p id="resultStudentInfo" class="text-sm font-medium text-slate-600 mt-0.5"></p>
+            <p id="resultMessage" class="text-sm sm:text-base font-semibold mt-1"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <div class="bg-white/90 rounded-2xl px-5 py-3 border border-slate-200 text-center shadow-sm">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Số ô đúng</div>
+            <div class="text-2xl font-black text-emerald-600"><span id="scoreCorrect">0</span>/<span id="scoreTotal">71</span></div>
+          </div>
+          <div class="bg-white/90 rounded-2xl px-5 py-3 border border-orange-200 text-center shadow-sm">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Điểm số</div>
+            <div class="text-2xl font-black text-orange-600"><span id="scoreTen">0.0</span>/10</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN I: MINT PASTEL ================= -->
+    <section class="rounded-3xl bg-emerald-50/90 border border-emerald-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-center gap-3 border-b border-emerald-200/80 pb-3">
+        <span class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-extrabold text-sm">PHẦN I</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">
+          I. PHƯƠNG PHÁP VÀ KĨ NĂNG HỌC TẬP MÔN KHOA HỌC TỰ NHIÊN
+        </h2>
+      </div>
+
+      <!-- Câu 1 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-emerald-100" data-q="q1">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <p class="font-bold text-emerald-900 mb-2">Câu 1. <span class="font-normal text-slate-800">Phương pháp tìm hiểu tự nhiên gồm các bước cơ bản:</span></p>
+            <div class="pl-2 sm:pl-5 space-y-2">
+              <div>Bước 1: <span class="blank-wrap" data-id="q1_1"></span> vấn đề.</div>
+              <div>Bước 2: Đưa ra <span class="blank-wrap" data-id="q1_2"></span> khoa học.</div>
+              <div>Bước 3: Lập <span class="blank-wrap" data-id="q1_3"></span> kiểm tra giả thuyết.</div>
+              <div>Bước 4: Thực hiện <span class="blank-wrap" data-id="q1_4"></span> .</div>
+              <div>Bước 5: Viết báo cáo và <span class="blank-wrap" data-id="q1_5"></span> kết quả.</div>
+            </div>
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" title="Xem gợi ý Câu 1" data-target="hint-q1">💡</button>
+        </div>
+        <div id="hint-q1" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 1:</strong> Bước 1: <em>Đề xuất</em>; Bước 2: <em>dự đoán</em>; Bước 3: <em>kế hoạch</em>; Bước 4: <em>kế hoạch</em>; Bước 5: <em>thảo luận</em>.
+        </div>
+      </div>
+
+      <!-- Câu 2 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-emerald-100" data-q="q2">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-emerald-900">Câu 2.</span> Một số kĩ năng học tập môn Khoa học tự nhiên gồm: kĩ năng <span class="blank-wrap" data-id="q2_1"></span>, kĩ năng <span class="blank-wrap" data-id="q2_2"></span>, kĩ năng <span class="blank-wrap" data-id="q2_3"></span> và kĩ năng <span class="blank-wrap" data-id="q2_4"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" title="Xem gợi ý Câu 2" data-target="hint-q2">💡</button>
+        </div>
+        <div id="hint-q2" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 2:</strong> Chọn đủ 4 kĩ năng đúng (không trùng lặp): <em>quan sát</em>, <em>phân loại</em>, <em>liên kết</em>, <em>đo</em>.
+        </div>
+      </div>
+
+      <!-- Câu 3 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-emerald-100" data-q="q3">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-emerald-900">Câu 3.</span> Khi sử dụng các dụng cụ đo cần xác định <span class="blank-wrap" data-id="q3_1"></span> và <span class="blank-wrap" data-id="q3_2"></span> của dụng cụ đo.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" title="Xem gợi ý Câu 3" data-target="hint-q3">💡</button>
+        </div>
+        <div id="hint-q3" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 3:</strong> <em>giới hạn đo (GHĐ)</em> và <em>độ chia nhỏ nhất (ĐCNN)</em> (không phân biệt thứ tự).
+        </div>
+      </div>
+
+      <!-- Câu 4 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-emerald-100" data-q="q4">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-emerald-900">Câu 4.</span> Báo cáo thực hành thường trình bày mục đích, dụng cụ, cách tiến hành, <span class="blank-wrap" data-id="q4_1"></span> và <span class="blank-wrap" data-id="q4_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" title="Xem gợi ý Câu 4" data-target="hint-q4">💡</button>
+        </div>
+        <div id="hint-q4" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 4:</strong> <em>kết quả</em> và <em>kết luận</em> (không phân biệt thứ tự).
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN II: SKY BLUE PASTEL ================= -->
+    <section class="rounded-3xl bg-sky-50/90 border border-sky-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-center gap-3 border-b border-sky-200/80 pb-3">
+        <span class="px-3 py-1 rounded-xl bg-sky-600 text-white font-extrabold text-sm">PHẦN II</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-sky-950">
+          II. NGUYÊN TỬ – NGUYÊN TỐ HÓA HỌC
+        </h2>
+      </div>
+
+      <!-- Câu 5 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 5.</span> Nguyên tử là những hạt vô cùng <span class="blank-wrap" data-id="q5_1"></span> và trung hòa về <span class="blank-wrap" data-id="q5_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q5">💡</button>
+        </div>
+        <div id="hint-q5" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 5:</strong> <em>nhỏ bé</em>; <em>điện</em>.
+        </div>
+      </div>
+
+      <!-- Câu 6 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 6.</span> Nguyên tử gồm <span class="blank-wrap" data-id="q6_1"></span> mang điện tích dương và <span class="blank-wrap" data-id="q6_2"></span> mang điện tích âm.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q6">💡</button>
+        </div>
+        <div id="hint-q6" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 6:</strong> <em>hạt nhân</em>; <em>vỏ nguyên tử</em>.
+        </div>
+      </div>
+
+      <!-- Câu 7 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 7.</span> Hạt nhân nguyên tử gồm hai loại hạt là <span class="blank-wrap" data-id="q7_1"></span> và <span class="blank-wrap" data-id="q7_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q7">💡</button>
+        </div>
+        <div id="hint-q7" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 7:</strong> <em>proton</em> và <em>neutron</em> (có thể đảo thứ tự).
+        </div>
+      </div>
+
+      <!-- Câu 8 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 8.</span> Hạt proton mang điện tích <span class="blank-wrap" data-id="q8_1"></span>; electron mang điện tích <span class="blank-wrap" data-id="q8_2"></span>; neutron <span class="blank-wrap" data-id="q8_3"></span> mang điện.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q8">💡</button>
+        </div>
+        <div id="hint-q8" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 8:</strong> <em>dương</em> (+); <em>âm</em> (-); <em>không</em>.
+        </div>
+      </div>
+
+      <!-- Câu 9 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 9.</span> Trong nguyên tử, số proton <span class="blank-wrap" data-id="q9_1"></span> số electron.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q9">💡</button>
+        </div>
+        <div id="hint-q9" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 9:</strong> <em>bằng</em> (hoặc <em>=</em>).
+        </div>
+      </div>
+
+      <!-- Câu 10 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 10.</span> Khối lượng nguyên tử tập trung chủ yếu ở <span class="blank-wrap" data-id="q10_1"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q10">💡</button>
+        </div>
+        <div id="hint-q10" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 10:</strong> <em>hạt nhân</em>.
+        </div>
+      </div>
+
+      <!-- Câu 11 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 11.</span> Nguyên tố hóa học là tập hợp những nguyên tử có cùng số <span class="blank-wrap" data-id="q11_1"></span> trong hạt nhân.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q11">💡</button>
+        </div>
+        <div id="hint-q11" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 11:</strong> <em>proton</em> (hoặc <em>p</em>).
+        </div>
+      </div>
+
+      <!-- Câu 12 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 12.</span> Kí hiệu hóa học của nguyên tố gồm một hoặc hai chữ cái, trong đó chữ cái đầu được viết <span class="blank-wrap" data-id="q12_1"></span>, chữ cái thứ hai (nếu có) viết <span class="blank-wrap" data-id="q12_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q12">💡</button>
+        </div>
+        <div id="hint-q12" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 12:</strong> <em>in hoa</em> (hoặc <em>hoa</em>); <em>thường</em> (hoặc <em>in thường</em>).
+        </div>
+      </div>
+
+      <!-- Câu 13 (Bảng kí hiệu hóa học - phân biệt chữ HOA/thường) -->
+      <!-- Câu 13 (Bảng kí hiệu hóa học) -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-sky-100">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-sky-900">Câu 13.</span> Điền kí hiệu hóa học của các nguyên tố sau:
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q13">💡</button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full max-w-xl mx-auto border-collapse rounded-2xl overflow-hidden border border-sky-200 bg-white">
+            <thead>
+              <tr class="bg-sky-100/90 text-sky-950">
+                <th class="py-2.5 px-4 text-left font-bold border-b border-r border-sky-200 w-1/2">Nguyên tố</th>
+                <th class="py-2.5 px-4 text-center font-bold border-b border-sky-200 w-1/2">Kí hiệu hóa học</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-sky-100 text-base">
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Hydrogen</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_1"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Oxygen</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_2"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Carbon</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_3"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Nitrogen</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_4"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Sodium</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_5"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Calcium</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_6"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Iron</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_7"></span></td>
+              </tr>
+              <tr class="hover:bg-sky-50/40">
+                <td class="py-2 px-4 font-medium border-r border-sky-100">Chlorine</td>
+                <td class="py-2 px-4 text-center"><span class="blank-wrap" data-id="q13_8"></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="hint-q13" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 13:</strong> Hydrogen: <strong>H</strong> | Oxygen: <strong>O</strong> | Carbon: <strong>C</strong> | Nitrogen: <strong>N</strong> | Sodium: <strong>Na</strong> | Calcium: <strong>Ca</strong> | Iron: <strong>Fe</strong> | Chlorine: <strong>Cl</strong>.
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN III: LAVENDER PASTEL ================= -->
+    <section class="rounded-3xl bg-violet-50/90 border border-violet-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-center gap-3 border-b border-violet-200/80 pb-3">
+        <span class="px-3 py-1 rounded-xl bg-violet-600 text-white font-extrabold text-sm">PHẦN III</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-violet-950">
+          III. SƠ LƯỢC VỀ BẢNG TUẦN HOÀN CÁC NGUYÊN TỐ HÓA HỌC
+        </h2>
+      </div>
+
+      <!-- Câu 14 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-violet-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-violet-900">Câu 14.</span> Các nguyên tố hóa học trong bảng tuần hoàn được sắp xếp theo chiều <span class="blank-wrap" data-id="q14_1"></span> của điện tích hạt nhân nguyên tử.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q14">💡</button>
+        </div>
+        <div id="hint-q14" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 14:</strong> <em>tăng dần</em>.
+        </div>
+      </div>
+
+      <!-- Câu 15 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-violet-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-violet-900">Câu 15.</span> Ô nguyên tố cho biết các thông tin: số hiệu nguyên tử, <span class="blank-wrap" data-id="q15_1"></span>, <span class="blank-wrap" data-id="q15_2"></span> và khối lượng nguyên tử.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q15">💡</button>
+        </div>
+        <div id="hint-q15" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 15:</strong> <em>kí hiệu hóa học</em> và <em>tên nguyên tố</em> (có thể đảo thứ tự).
+        </div>
+      </div>
+
+      <!-- Câu 16 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-violet-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-violet-900">Câu 16.</span> Các nguyên tố trong bảng tuần hoàn được sắp xếp thành các hàng gọi là <span class="blank-wrap" data-id="q16_1"></span> và các cột gọi là <span class="blank-wrap" data-id="q16_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q16">💡</button>
+        </div>
+        <div id="hint-q16" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 16:</strong> <em>chu kì</em>; <em>nhóm</em>.
+        </div>
+      </div>
+
+      <!-- Câu 17 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-violet-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-violet-900">Câu 17.</span> Số thứ tự của chu kì bằng số <span class="blank-wrap" data-id="q17_1"></span> của nguyên tử các nguyên tố thuộc chu kì đó.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q17">💡</button>
+        </div>
+        <div id="hint-q17" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 17:</strong> <em>lớp electron</em> (hoặc <em>lớp e</em>).
+        </div>
+      </div>
+
+      <!-- Câu 18 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-violet-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-violet-900">Câu 18.</span> Bảng tuần hoàn gồm các nguyên tố <span class="blank-wrap" data-id="q18_1"></span>, nguyên tố <span class="blank-wrap" data-id="q18_2"></span> và nguyên tố <span class="blank-wrap" data-id="q18_3"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q18">💡</button>
+        </div>
+        <div id="hint-q18" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 18:</strong> <em>kim loại</em>, <em>phi kim</em> và <em>khí hiếm</em> (có thể đảo thứ tự).
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN IV: CREAM YELLOW PASTEL ================= -->
+    <section class="rounded-3xl bg-amber-50/90 border border-amber-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-center gap-3 border-b border-amber-200/80 pb-3">
+        <span class="px-3 py-1 rounded-xl bg-amber-600 text-white font-extrabold text-sm">PHẦN IV</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-amber-950">
+          IV. TỐC ĐỘ CHUYỂN ĐỘNG
+        </h2>
+      </div>
+
+      <!-- Câu 32 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-amber-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-amber-900">Câu 32.</span> Tốc độ là đại lượng cho biết mức độ <span class="blank-wrap" data-id="q32_1"></span> hay <span class="blank-wrap" data-id="q32_2"></span> của chuyển động.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q32">💡</button>
+        </div>
+        <div id="hint-q32" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 32:</strong> <em>nhanh</em>; <em>chậm</em> (có thể đảo thứ tự).
+        </div>
+      </div>
+
+      <!-- Câu 33 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-amber-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-amber-900">Câu 33.</span> Tốc độ được xác định bằng <span class="blank-wrap" data-id="q33_1"></span> vật đi được trong một đơn vị <span class="blank-wrap" data-id="q33_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q33">💡</button>
+        </div>
+        <div id="hint-q33" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 33:</strong> <em>quãng đường</em>; <em>thời gian</em>.
+        </div>
+      </div>
+
+      <!-- Câu 34 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-amber-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-amber-900">Câu 34.</span> Công thức tính tốc độ: <span class="blank-wrap" data-id="q34_1"></span>. Trong đó v là <span class="blank-wrap" data-id="q34_2"></span>, s là <span class="blank-wrap" data-id="q34_3"></span>, t là <span class="blank-wrap" data-id="q34_4"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q34">💡</button>
+        </div>
+        <div id="hint-q34" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 34:</strong> <em>v = s/t</em>; v là <em>tốc độ</em>; s là <em>quãng đường</em>; t là <em>thời gian</em>.
+        </div>
+      </div>
+
+      <!-- Câu 35 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-amber-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-amber-900">Câu 35.</span> Đơn vị đo tốc độ thường dùng là <span class="blank-wrap" data-id="q35_1"></span> và <span class="blank-wrap" data-id="q35_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q35">💡</button>
+        </div>
+        <div id="hint-q35" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 35:</strong> <em>m/s</em> và <em>km/h</em> (có thể đảo thứ tự).
+        </div>
+      </div>
+
+      <!-- Câu 36 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-amber-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <p class="font-bold text-amber-900 mb-2">Câu 36. <span class="font-normal text-slate-800">Điền vào chỗ trống:</span></p>
+            <div class="pl-2 sm:pl-5 space-y-2">
+              <div>• 1 m/s = <span class="blank-wrap" data-id="q36_1"></span> km/h.</div>
+              <div>• 1 km/h = <span class="blank-wrap" data-id="q36_2"></span> m/s (viết dưới dạng phân số).</div>
+              <div>• Vật chuyển động càng nhanh thì tốc độ càng <span class="blank-wrap" data-id="q36_3"></span> .</div>
+              <div>• Trong cùng một khoảng thời gian, vật đi được quãng đường càng dài thì tốc độ càng <span class="blank-wrap" data-id="q36_4"></span> .</div>
+            </div>
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q36">💡</button>
+        </div>
+        <div id="hint-q36" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 36:</strong> <em>3,6</em>; <em>5/18</em>; <em>lớn</em> (hoặc <em>cao</em>); <em>lớn</em> (hoặc <em>cao</em>).
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN V: PEACH PASTEL ================= -->
+    <section class="rounded-3xl bg-rose-50/90 border border-rose-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-center gap-3 border-b border-rose-200/80 pb-3">
+        <span class="px-3 py-1 rounded-xl bg-rose-600 text-white font-extrabold text-sm">PHẦN V</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-rose-950">
+          V. ĐO TỐC ĐỘ
+        </h2>
+      </div>
+
+      <!-- Câu 37 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 37.</span> Để đo tốc độ của một vật, cần đo <span class="blank-wrap" data-id="q37_1"></span> và <span class="blank-wrap" data-id="q37_2"></span> vật đi hết quãng đường đó.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q37">💡</button>
+        </div>
+        <div id="hint-q37" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 37:</strong> <em>quãng đường</em>; <em>thời gian</em>.
+        </div>
+      </div>
+
+      <!-- Câu 38 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 38.</span> Để đo quãng đường, người ta thường dùng <span class="blank-wrap" data-id="q38_1"></span>; để đo thời gian, người ta thường dùng <span class="blank-wrap" data-id="q38_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q38">💡</button>
+        </div>
+        <div id="hint-q38" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 38:</strong> <em>thước</em> (hoặc <em>thước đo / thước cuộn</em>); <em>đồng hồ</em> (hoặc <em>đồng hồ bấm giây</em>).
+        </div>
+      </div>
+
+      <!-- Câu 39 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 39.</span> Khi đo tốc độ bằng đồng hồ bấm giây, ta lấy quãng đường đo được chia cho <span class="blank-wrap" data-id="q39_1"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q39">💡</button>
+        </div>
+        <div id="hint-q39" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 39:</strong> <em>thời gian</em> (hoặc <em>thời gian đo được</em>).
+        </div>
+      </div>
+
+      <!-- Câu 40 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 40.</span> Để đo thời gian chuyển động của vật chính xác hơn trong phòng thí nghiệm, có thể sử dụng đồng hồ đo thời gian <span class="blank-wrap" data-id="q40_1"></span> kết hợp với <span class="blank-wrap" data-id="q40_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q40">💡</button>
+        </div>
+        <div id="hint-q40" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 40:</strong> <em>hiện số</em>; <em>cổng quang điện</em>.
+        </div>
+      </div>
+
+      <!-- Câu 41 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 41.</span> Thiết bị bắn tốc độ được sử dụng để xác định <span class="blank-wrap" data-id="q41_1"></span> của các phương tiện tham gia giao thông.
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q41">💡</button>
+        </div>
+        <div id="hint-q41" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 41:</strong> <em>tốc độ</em>.
+        </div>
+      </div>
+
+      <!-- Câu 42 -->
+      <div class="question-block bg-white/80 rounded-2xl p-4 sm:p-5 border border-rose-100">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base sm:text-[17px] leading-relaxed flex-1">
+            <span class="font-bold text-rose-900">Câu 42.</span> Trong thực hành đo tốc độ, để tăng độ tin cậy của kết quả, ta nên tiến hành đo <span class="blank-wrap" data-id="q42_1"></span> lần và tính giá trị <span class="blank-wrap" data-id="q42_2"></span> .
+          </div>
+          <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" data-target="hint-q42">💡</button>
+        </div>
+        <div id="hint-q42" class="hint-box hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+          <strong>Gợi ý Câu 42:</strong> <em>nhiều</em> (hoặc <em>3</em>); <em>trung bình</em>.
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PHẦN B: TEAL / AQUA PASTEL ================= -->
+    <section class="rounded-3xl bg-teal-50/90 border border-teal-200 shadow-sm p-5 sm:p-7 space-y-5">
+      <div class="flex items-start justify-between gap-3 border-b border-teal-200/80 pb-3">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-xl bg-teal-600 text-white font-extrabold text-sm shrink-0">PHẦN B</span>
+          <h2 class="text-lg sm:text-xl font-extrabold text-teal-950">
+            PHẦN B. GHI NHỚ CÔNG THỨC QUAN TRỌNG
+          </h2>
+        </div>
+        <button type="button" class="hint-btn shrink-0 w-9 h-9 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center transition cursor-pointer" title="Xem gợi ý Phần B" data-target="hint-partb">💡</button>
+      </div>
+
+      <div class="bg-white/85 rounded-2xl p-3 sm:p-5 border border-teal-100 overflow-x-auto">
+        <table class="w-full border-collapse rounded-2xl overflow-hidden border border-teal-200 bg-white">
+          <thead>
+            <tr class="bg-teal-100/90 text-teal-950">
+              <th class="py-3 px-4 text-left font-bold border-b border-r border-teal-200 w-2/5 sm:w-1/3">Nội dung</th>
+              <th class="py-3 px-4 text-left font-bold border-b border-teal-200">Công thức</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-teal-100 text-base">
+            <tr class="hover:bg-teal-50/40">
+              <td class="py-3 px-4 font-semibold text-slate-800 border-r border-teal-100">Tính tốc độ</td>
+              <td class="py-3 px-4"><span class="font-bold text-teal-900">v =</span> <span class="blank-wrap" data-id="pb_1"></span></td>
+            </tr>
+            <tr class="hover:bg-teal-50/40">
+              <td class="py-3 px-4 font-semibold text-slate-800 border-r border-teal-100">Tính quãng đường</td>
+              <td class="py-3 px-4"><span class="font-bold text-teal-900">s =</span> <span class="blank-wrap" data-id="pb_2"></span></td>
+            </tr>
+            <tr class="hover:bg-teal-50/40">
+              <td class="py-3 px-4 font-semibold text-slate-800 border-r border-teal-100">Tính thời gian</td>
+              <td class="py-3 px-4"><span class="font-bold text-teal-900">t =</span> <span class="blank-wrap" data-id="pb_3"></span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div id="hint-partb" class="hint-box hidden mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900 space-y-1">
+          <div><strong>Gợi ý Phần B:</strong></div>
+          <div>• Tính tốc độ: <strong>v = s / t</strong></div>
+          <div>• Tính quãng đường: <strong>s = v × t</strong></div>
+          <div>• Tính thời gian: <strong>t = s / v</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bộ nút chức năng ở cuối phiếu -->
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <button
+        id="btnCheckBottom"
+        type="button"
+        class="px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] text-white font-extrabold text-base shadow-md transition flex items-center gap-2 cursor-pointer"
+      >
+        <span>✅</span> Chấm điểm
+      </button>
+      <button
+        id="btnShowAllAnswersBottom"
+        type="button"
+        class="px-5 py-3 rounded-2xl bg-emerald-100 hover:bg-emerald-200 active:scale-[0.98] text-emerald-900 font-bold text-base border border-emerald-300 shadow-sm transition flex items-center gap-2 cursor-pointer"
+      >
+        <span>👁️</span> Xem đáp án toàn phiếu
+      </button>
+      <button
+        id="btnResetBottom"
+        type="button"
+        class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 font-bold text-base border border-slate-300 shadow-sm transition flex items-center gap-2 cursor-pointer"
+      >
+        <span>🔄</span> Làm lại
+      </button>
+      <button
+        id="btnScrollTop"
+        type="button"
+        class="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-base border border-slate-300 shadow-sm transition cursor-pointer"
+      >
+        ⬆️ Lên đầu trang
+      </button>
+    </div>
+  </main>
+
+  <!-- Modal xác nhận Làm lại (thay thế confirm() trình duyệt) -->
+  <div id="resetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl shrink-0">🔄</div>
+        <div>
+          <h3 class="text-lg font-extrabold text-slate-800">Xác nhận làm lại phiếu?</h3>
+          <p class="text-sm text-slate-600">Tất cả lựa chọn sẽ được xóa sạch và các phương án trong ô chọn sẽ được xáo trộn lại ngẫu nhiên.</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button id="btnCancelReset" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition cursor-pointer">
+          Hủy bỏ
+        </button>
+        <button id="btnConfirmReset" type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition cursor-pointer">
+          Xóa &amp; Làm lại
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * =========================================================================
+     * CẤU HÌNH DỮ LIỆU CHỌN TỪ CÓ SẴN & QUY TẮC CHẤM ĐIỂM
+     * =========================================================================
+     */
+
+    // Hàm xáo trộn ngẫu nhiên mảng (Fisher-Yates Shuffle)
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Cấu hình các nhóm ô không phân biệt thứ tự (không được chọn trùng nhau)
+    const UNORDERED_GROUPS = {
+      q2: {
+        ids: ['q2_1', 'q2_2', 'q2_3', 'q2_4'],
+        options: ['quan sát', 'phân loại', 'liên kết', 'đo', 'ghi nhớ máy móc', 'sao chép'],
+        correctSet: ['quan sát', 'phân loại', 'liên kết', 'đo']
+      },
+      q3: {
+        ids: ['q3_1', 'q3_2'],
+        options: ['giới hạn đo (GHĐ)', 'độ chia nhỏ nhất (ĐCNN)', 'khối lượng riêng', 'nhiệt độ sôi'],
+        correctSet: ['giới hạn đo (GHĐ)', 'độ chia nhỏ nhất (ĐCNN)']
+      },
+      q4: {
+        ids: ['q4_1', 'q4_2'],
+        options: ['kết quả', 'kết luận', 'giả thuyết', 'bảng giá'],
+        correctSet: ['kết quả', 'kết luận']
+      },
+      q7: {
+        ids: ['q7_1', 'q7_2'],
+        options: ['proton', 'neutron', 'electron', 'phân tử'],
+        correctSet: ['proton', 'neutron']
+      },
+      q15: {
+        ids: ['q15_1', 'q15_2'],
+        options: ['kí hiệu hóa học', 'tên nguyên tố', 'số neutron', 'nhiệt độ nóng chảy'],
+        correctSet: ['kí hiệu hóa học', 'tên nguyên tố']
+      },
+      q18: {
+        ids: ['q18_1', 'q18_2', 'q18_3'],
+        options: ['kim loại', 'phi kim', 'khí hiếm', 'hợp chất', 'đơn chất'],
+        correctSet: ['kim loại', 'phi kim', 'khí hiếm']
+      },
+      q32: {
+        ids: ['q32_1', 'q32_2'],
+        options: ['nhanh', 'chậm', 'cao', 'nặng'],
+        correctSet: ['nhanh', 'chậm']
+      },
+      q35: {
+        ids: ['q35_1', 'q35_2'],
+        options: ['m/s', 'km/h', 'm', 'kg', 's'],
+        correctSet: ['m/s', 'km/h']
+      }
+    };
+
+    // Định nghĩa cấu hình cho toàn bộ 71 chỗ trống dạng dropdown
+    const BLANKS_CONFIG = {
+      // PHẦN I
+      q1_1: { options: ['Đề xuất', 'Thực hiện', 'Quan sát', 'Báo cáo'], answer: 'Đề xuất' },
+      q1_2: { options: ['dự đoán', 'kết quả', 'kế hoạch', 'báo cáo'], answer: 'dự đoán' },
+      q1_3: { options: ['kế hoạch', 'dự đoán', 'kết luận', 'giả thuyết'], answer: 'kế hoạch' },
+      q1_4: { options: ['kế hoạch', 'báo cáo', 'thảo luận', 'đề xuất'], answer: 'kế hoạch' },
+      q1_5: { options: ['thảo luận', 'quan sát', 'dự đoán', 'tính toán'], answer: 'thảo luận' },
+
+      q2_1: { group: 'q2' },
+      q2_2: { group: 'q2' },
+      q2_3: { group: 'q2' },
+      q2_4: { group: 'q2' },
+
+      q3_1: { group: 'q3' },
+      q3_2: { group: 'q3' },
+
+      q4_1: { group: 'q4' },
+      q4_2: { group: 'q4' },
+
+      // PHẦN II
+      q5_1: { options: ['nhỏ bé', 'to lớn', 'nhẹ nhàng', 'cứng rắn'], answer: 'nhỏ bé' },
+      q5_2: { options: ['điện', 'khối lượng', 'nhiệt', 'lực'], answer: 'điện' },
+
+      q6_1: { options: ['hạt nhân', 'lớp vỏ', 'electron', 'neutron'], answer: 'hạt nhân' },
+      q6_2: { options: ['vỏ nguyên tử', 'hạt nhân', 'proton', 'neutron'], answer: 'vỏ nguyên tử' },
+
+      q7_1: { group: 'q7' },
+      q7_2: { group: 'q7' },
+
+      q8_1: { options: ['dương', 'âm', 'trung hòa'], answer: 'dương' },
+      q8_2: { options: ['âm', 'dương', 'không'], answer: 'âm' },
+      q8_3: { options: ['không', 'dương', 'âm'], answer: 'không' },
+
+      q9_1: { options: ['bằng', 'lớn hơn', 'nhỏ hơn', 'gấp đôi'], answer: 'bằng' },
+      q10_1: { options: ['hạt nhân', 'vỏ nguyên tử', 'các electron', 'khoảng trống'], answer: 'hạt nhân' },
+      q11_1: { options: ['proton', 'neutron', 'lớp electron', 'phân tử'], answer: 'proton' },
+
+      q12_1: { options: ['in hoa', 'viết thường', 'in nghiêng'], answer: 'in hoa' },
+      q12_2: { options: ['thường', 'in hoa', 'gạch chân'], answer: 'thường' },
+
+      // Câu 13: Bảng kí hiệu hóa học
+      q13_1: { center: true, options: ['H', 'He', 'Hg', 'Hy'], answer: 'H' },
+      q13_2: { center: true, options: ['O', 'Ox', 'Os', 'Og'], answer: 'O' },
+      q13_3: { center: true, options: ['C', 'Ca', 'Cl', 'Cu'], answer: 'C' },
+      q13_4: { center: true, options: ['N', 'Na', 'Ne', 'Ni'], answer: 'N' },
+      q13_5: { center: true, options: ['Na', 'S', 'So', 'N'], answer: 'Na' },
+      q13_6: { center: true, options: ['Ca', 'C', 'Cl', 'Cu'], answer: 'Ca' },
+      q13_7: { center: true, options: ['Fe', 'I', 'Ir', 'F'], answer: 'Fe' },
+      q13_8: { center: true, options: ['Cl', 'C', 'Ca', 'Cr'], answer: 'Cl' },
+
+      // PHẦN III
+      q14_1: { options: ['tăng dần', 'giảm dần', 'ngẫu nhiên', 'không đổi'], answer: 'tăng dần' },
+
+      q15_1: { group: 'q15' },
+      q15_2: { group: 'q15' },
+
+      q16_1: { options: ['chu kì', 'nhóm', 'ô nguyên tố', 'lớp'], answer: 'chu kì' },
+      q16_2: { options: ['nhóm', 'chu kì', 'hàng', 'dãy'], answer: 'nhóm' },
+
+      q17_1: { options: ['lớp electron', 'proton', 'neutron', 'electron lớp ngoài cùng'], answer: 'lớp electron' },
+
+      q18_1: { group: 'q18' },
+      q18_2: { group: 'q18' },
+      q18_3: { group: 'q18' },
+
+      // PHẦN IV
+      q32_1: { group: 'q32' },
+      q32_2: { group: 'q32' },
+
+      q33_1: { options: ['quãng đường', 'thời gian', 'khối lượng', 'lực'], answer: 'quãng đường' },
+      q33_2: { options: ['thời gian', 'quãng đường', 'chiều dài', 'diện tích'], answer: 'thời gian' },
+
+      q34_1: { options: ['v = s / t', 'v = s × t', 'v = t / s', 'v = s + t'], answer: 'v = s / t' },
+      q34_2: { options: ['tốc độ', 'quãng đường', 'thời gian', 'vận lực'], answer: 'tốc độ' },
+      q34_3: { options: ['quãng đường', 'tốc độ', 'thời gian', 'diện tích'], answer: 'quãng đường' },
+      q34_4: { options: ['thời gian', 'tốc độ', 'quãng đường', 'trọng lượng'], answer: 'thời gian' },
+
+      q35_1: { group: 'q35' },
+      q35_2: { group: 'q35' },
+
+      q36_1: { options: ['3,6', '0,36', '36', '10'], answer: '3,6' },
+      q36_2: { options: ['5/18', '18/5', '1/36', '10/36'], answer: '5/18' },
+      q36_3: { options: ['lớn', 'nhỏ', 'không đổi', 'bằng 0'], answer: 'lớn' },
+      q36_4: { options: ['lớn', 'nhỏ', 'chậm', 'không đổi'], answer: 'lớn' },
+
+      // PHẦN V
+      q37_1: { options: ['quãng đường', 'khối lượng', 'lực kéo', 'thể tích'], answer: 'quãng đường' },
+      q37_2: { options: ['thời gian', 'nhiệt độ', 'trọng lượng', 'diện tích'], answer: 'thời gian' },
+
+      q38_1: { options: ['thước', 'cân', 'đồng hồ', 'nhiệt kế'], answer: 'thước' },
+      q38_2: { options: ['đồng hồ', 'thước', 'lực kế', 'bình chia độ'], answer: 'đồng hồ' },
+
+      q39_1: { options: ['thời gian', 'tốc độ', 'số lần đo', 'chiều dài'], answer: 'thời gian' },
+
+      q40_1: { options: ['hiện số', 'bấm giây', 'treo tường', 'cát'], answer: 'hiện số' },
+      q40_2: { options: ['cổng quang điện', 'thước dây', 'kính lúp', 'cân điện tử'], answer: 'cổng quang điện' },
+
+      q41_1: { options: ['tốc độ', 'khối lượng', 'kích thước', 'quãng đường'], answer: 'tốc độ' },
+
+      q42_1: { options: ['nhiều', 'một', 'hai', 'không cần'], answer: 'nhiều' },
+      q42_2: { options: ['trung bình', 'lớn nhất', 'nhỏ nhất', 'tổng'], answer: 'trung bình' },
+
+      // PHẦN B: 3 CÔNG THỨC TỐC ĐỘ (ĐÃ BỎ 2 Ý CUỐI)
+      pb_1: { options: ['s / t', 's × t', 't / s', 's - t'], answer: 's / t' },
+      pb_2: { options: ['v × t', 'v / t', 't / v', 'v + t'], answer: 'v × t' },
+      pb_3: { options: ['s / v', 's × v', 'v / s', 's - v'], answer: 's / v' }
+    };
+
+    const ALL_IDS = Object.keys(BLANKS_CONFIG);
+    const selectMap = {};
+    const feedbackMap = {};
+
+    /**
+     * Đổ danh sách phương án đã xáo trộn ngẫu nhiên vào thẻ <select>
+     */
+    function populateSelectOptions(selectEl, optionsList) {
+      selectEl.innerHTML = '';
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '— Chọn —';
+      selectEl.appendChild(defaultOpt);
+
+      shuffleArray(optionsList).forEach((optText) => {
+        const opt = document.createElement('option');
+        opt.value = optText;
+        opt.textContent = optText;
+        selectEl.appendChild(opt);
+      });
+
+      selectEl.value = '';
+      selectEl.classList.add('is-placeholder');
+    }
+
+    /**
+     * Khởi tạo toàn bộ ô chọn từ dropdown (mặc định trống hoàn toàn)
+     */
+    function initBlanks() {
+      document.getElementById('totalCount').textContent = ALL_IDS.length;
+      document.getElementById('scoreTotal').textContent = ALL_IDS.length;
+
+      document.querySelectorAll('.blank-wrap').forEach((wrap) => {
+        const id = wrap.getAttribute('data-id');
+        const cfg = BLANKS_CONFIG[id];
+        if (!cfg) return;
+
+        wrap.className = 'inline-flex flex-wrap items-center gap-1 align-baseline';
+
+        const select = document.createElement('select');
+        select.id = 'select_' + id;
+        select.className = 'blank-select is-placeholder text-sm sm:text-base' + (cfg.center ? ' text-center' : '');
+        select.setAttribute('aria-label', 'Chọn đáp án cho ô ' + id);
+
+        const opts = cfg.group ? UNORDERED_GROUPS[cfg.group].options : cfg.options;
+        populateSelectOptions(select, opts);
+
+        select.addEventListener('change', () => {
+          select.classList.toggle('is-placeholder', select.value === '');
+          clearSingleFeedback(id);
+          updateProgress();
+        });
+
+        const fb = document.createElement('span');
+        fb.id = 'fb_' + id;
+        fb.className = 'hidden text-xs sm:text-sm font-bold px-2 py-0.5 rounded-lg';
+
+        wrap.appendChild(select);
+        wrap.appendChild(fb);
+
+        selectMap[id] = select;
+        feedbackMap[id] = fb;
+      });
+    }
+
+    /**
+     * Cập nhật thanh tiến độ số ô đã chọn
+     */
+    function updateProgress() {
+      let filled = 0;
+      ALL_IDS.forEach((id) => {
+        if (selectMap[id] && selectMap[id].value !== '') {
+          filled++;
+        }
+      });
+      const total = ALL_IDS.length;
+      const pct = Math.round((filled / total) * 100);
+      document.getElementById('filledCount').textContent = filled;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    /**
+     * Xóa trạng thái đúng/sai của một ô cụ thể
+     */
+    function clearSingleFeedback(id) {
+      const select = selectMap[id];
+      const fb = feedbackMap[id];
+      if (select) {
+        select.classList.remove('is-correct', 'is-wrong');
+      }
+      if (fb) {
+        fb.classList.add('hidden');
+        fb.textContent = '';
+      }
+    }
+
+    /**
+     * Gắn hiển thị phản hồi đúng/sai cho 1 ô
+     */
+    function setFeedback(id, isCorrect, correctLabel) {
+      const select = selectMap[id];
+      const fb = feedbackMap[id];
+      if (!select || !fb) return;
+
+      select.classList.remove('is-correct', 'is-wrong');
+      fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-700', 'bg-rose-100', 'text-rose-700');
+
+      if (isCorrect) {
+        select.classList.add('is-correct');
+        fb.classList.add('bg-emerald-100', 'text-emerald-700');
+        fb.textContent = '✓';
+      } else {
+        select.classList.add('is-wrong');
+        fb.classList.add('bg-rose-100', 'text-rose-700');
+        fb.textContent = '✗ Đáp án: ' + correctLabel;
+      }
+    }
+
+    /**
+     * Chấm điểm toàn bộ phiếu học tập
+     */
+    function gradeWorksheet() {
+      let correctCount = 0;
+      const handledIds = new Set();
+
+      // 1. Chấm các nhóm câu không phân biệt thứ tự, không được trùng lặp
+      Object.values(UNORDERED_GROUPS).forEach((grp) => {
+        const remainingCorrect = [...grp.correctSet];
+        const statusById = {};
+
+        // Vòng 1: đánh dấu các ô chọn đúng và không bị trùng
+        grp.ids.forEach((id) => {
+          handledIds.add(id);
+          const val = selectMap[id].value;
+          const idx = remainingCorrect.indexOf(val);
+          if (idx !== -1) {
+            remainingCorrect.splice(idx, 1);
+            statusById[id] = { ok: true };
+            correctCount++;
+          } else {
+            const isDuplicate = val !== '' && grp.correctSet.includes(val);
+            statusById[id] = { ok: false, duplicate: isDuplicate };
+          }
+        });
+
+        // Vòng 2: gán đáp án còn thiếu cho các ô sai hoặc chọn trùng
+        let remPtr = 0;
+        grp.ids.forEach((id) => {
+          if (statusById[id].ok) {
+            setFeedback(id, true, '');
+          } else {
+            const missing = remainingCorrect[remPtr] || grp.correctSet[0];
+            remPtr++;
+            const label = statusById[id].duplicate ? `${missing} (bị trùng)` : missing;
+            setFeedback(id, false, label);
+          }
+        });
+      });
+
+      // 2. Chấm các ô độc lập
+      ALL_IDS.forEach((id) => {
+        if (handledIds.has(id)) return;
+        const cfg = BLANKS_CONFIG[id];
+        const val = selectMap[id].value;
+
+        if (val === cfg.answer) {
+          correctCount++;
+          setFeedback(id, true, '');
+        } else {
+          setFeedback(id, false, cfg.answer);
+        }
+      });
+
+      showScoreSummary(correctCount, ALL_IDS.length);
+    }
+
+    /**
+     * Hiển thị đáp án toàn phiếu (tự điền đúng toàn bộ các ô và mở gợi ý)
+     */
+    function showAllAnswers() {
+      const handledIds = new Set();
+
+      // Điền cho các nhóm không phân biệt thứ tự
+      Object.values(UNORDERED_GROUPS).forEach((grp) => {
+        grp.ids.forEach((id, idx) => {
+          handledIds.add(id);
+          const ans = grp.correctSet[idx];
+          selectMap[id].value = ans;
+          selectMap[id].classList.remove('is-placeholder');
+          setFeedback(id, true, '');
+        });
+      });
+
+      // Điền cho các ô độc lập
+      ALL_IDS.forEach((id) => {
+        if (handledIds.has(id)) return;
+        const ans = BLANKS_CONFIG[id].answer;
+        selectMap[id].value = ans;
+        selectMap[id].classList.remove('is-placeholder');
+        setFeedback(id, true, '');
+      });
+
+      updateProgress();
+      document.getElementById('resultBanner').classList.add('hidden');
+    }
+
+    /**
+     * Hiển thị bảng tổng kết điểm số và lời khen động viên
+     */
+    function showScoreSummary(correct, total) {
+      const score10 = ((correct / total) * 10).toFixed(1);
+      const numericScore = parseFloat(score10);
+
+      const banner = document.getElementById('resultBanner');
+      const emojiEl = document.getElementById('resultEmoji');
+      const titleEl = document.getElementById('resultTitle');
+      const infoEl = document.getElementById('resultStudentInfo');
+      const msgEl = document.getElementById('resultMessage');
+
+      document.getElementById('scoreCorrect').textContent = correct;
+      document.getElementById('scoreTotal').textContent = total;
+      document.getElementById('scoreTen').textContent = score10;
+
+      const sName = document.getElementById('studentName').value.trim();
+      const sClass = document.getElementById('studentClass').value.trim();
+      if (sName || sClass) {
+        infoEl.textContent = `Học sinh: ${sName || 'Chưa nhập tên'} — Lớp: 7${sClass || '...'}`;
+      } else {
+        infoEl.textContent = 'Mẹo nhỏ: Hãy điền Họ và tên cùng Lớp ở phía trên nhé!';
+      }
+
+      banner.classList.remove(
+        'hidden',
+        'bg-emerald-50', 'border-emerald-300',
+        'bg-sky-50', 'border-sky-300',
+        'bg-amber-50', 'border-amber-300',
+        'bg-rose-50', 'border-rose-300'
+      );
+
+      if (numericScore >= 8.0) {
+        banner.classList.add('bg-emerald-50', 'border-emerald-300');
+        emojiEl.textContent = '🏆';
+        titleEl.textContent = 'Xuất sắc quá đi!';
+        msgEl.className = 'text-sm sm:text-base font-bold mt-1 text-emerald-700';
+        msgEl.textContent = 'Em nắm rất chắc kiến thức lí thuyết KHTN 7. Sẵn sàng chinh phục điểm cao giữa kì I rồi!';
+        launchFireworks();
+      } else if (numericScore >= 6.5) {
+        banner.classList.add('bg-sky-50', 'border-sky-300');
+        emojiEl.textContent = '🌟';
+        titleEl.textContent = 'Làm bài khá tốt!';
+        msgEl.className = 'text-sm sm:text-base font-bold mt-1 text-sky-700';
+        msgEl.textContent = 'Em đã nắm vững phần lớn kiến thức trọng tâm. Hãy xem lại vài ô màu đỏ để đạt điểm 8+ nhé!';
+      } else if (numericScore >= 5.0) {
+        banner.classList.add('bg-amber-50', 'border-amber-300');
+        emojiEl.textContent = '💪';
+        titleEl.textContent = 'Cố gắng thêm chút nữa nhé!';
+        msgEl.className = 'text-sm sm:text-base font-bold mt-1 text-amber-800';
+        msgEl.textContent = 'Em đã đạt mức trung bình. Xem lại đáp án ở các ô đỏ và bấm "Làm lại" để luyện thêm một lượt nha!';
+      } else {
+        banner.classList.add('bg-rose-50', 'border-rose-300');
+        emojiEl.textContent = '📚';
+        titleEl.textContent = 'Cùng ôn lại bài nào!';
+        msgEl.className = 'text-sm sm:text-base font-bold mt-1 text-rose-700';
+        msgEl.textContent = 'Đừng nản nhé! Em hãy bấm biểu tượng bóng đèn 💡 ở từng câu hoặc "Xem đáp án toàn phiếu" để ôn tập rồi làm lại nhé!';
+      }
+
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    /**
+     * Xóa sạch toàn bộ lựa chọn và xáo trộn lại thứ tự phương án trong từng ô
+     */
+    function resetWorksheet() {
+      ALL_IDS.forEach((id) => {
+        const cfg = BLANKS_CONFIG[id];
+        const select = selectMap[id];
+        if (select) {
+          const opts = cfg.group ? UNORDERED_GROUPS[cfg.group].options : cfg.options;
+          populateSelectOptions(select, opts);
+        }
+        clearSingleFeedback(id);
+      });
+
+      // Ẩn lại tất cả khung gợi ý đang mở
+      document.querySelectorAll('.hint-box').forEach((box) => box.classList.add('hidden'));
+      document.getElementById('resultBanner').classList.add('hidden');
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /**
+     * Hiệu ứng pháo hoa (confetti) trên Canvas khi đạt từ 8 điểm trở lên
+     */
+    function launchFireworks() {
+      const canvas = document.getElementById('fireworksCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#f97316', '#10b981', '#0ea5e9', '#a855f7', '#eab308', '#f43f5e'];
+      const particles = [];
+
+      function createBurst(cx, cy) {
+        for (let i = 0; i < 36; i++) {
+          const angle = (Math.PI * 2 * i) / 36 + (Math.random() - 0.5) * 0.2;
+          const speed = 2.5 + Math.random() * 4.5;
+          particles.push({
+            x: cx,
+            y: cy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1,
+            decay: 0.015 + Math.random() * 0.012,
+            size: 3 + Math.random() * 3.5,
+            color: colors[Math.floor(Math.random() * colors.length)]
+          });
+        }
+      }
+
+      createBurst(canvas.width * 0.28, canvas.height * 0.32);
+      setTimeout(() => createBurst(canvas.width * 0.72, canvas.height * 0.28), 260);
+      setTimeout(() => createBurst(canvas.width * 0.5, canvas.height * 0.22), 520);
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.07; // trọng lực nhẹ
+          p.life -= p.decay;
+
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        if (particles.length > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      animate();
+    }
+
+    // Gắn sự kiện khi trang tải xong
+    window.addEventListener('DOMContentLoaded', () => {
+      initBlanks();
+      updateProgress();
+
+      // Nút Chấm điểm (trên & dưới)
+      document.getElementById('btnCheck').addEventListener('click', gradeWorksheet);
+      document.getElementById('btnCheckBottom').addEventListener('click', gradeWorksheet);
+
+      // Nút Xem đáp án toàn phiếu (trên & dưới)
+      document.getElementById('btnShowAllAnswers').addEventListener('click', showAllAnswers);
+      document.getElementById('btnShowAllAnswersBottom').addEventListener('click', showAllAnswers);
+
+      // Nút bóng đèn gợi ý riêng cho từng câu
+      document.querySelectorAll('.hint-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-target');
+          const box = document.getElementById(targetId);
+          if (box) {
+            box.classList.toggle('hidden');
+          }
+        });
+      });
+
+      // Modal xác nhận Làm lại (trên & dưới)
+      const modal = document.getElementById('resetModal');
+      const openResetModal = () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+      document.getElementById('btnReset').addEventListener('click', openResetModal);
+      document.getElementById('btnResetBottom').addEventListener('click', openResetModal);
+
+      document.getElementById('btnCancelReset').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+      document.getElementById('btnConfirmReset').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        resetWorksheet();
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+      });
+
+      // Nút cuộn lên đầu trang
+      document.getElementById('btnScrollTop').addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // Cập nhật kích thước canvas khi đổi kích thước màn hình
+    window.addEventListener('resize', () => {
+      const canvas = document.getElementById('fireworksCanvas');
+      if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    });
+  </script>
+</body>
+</html>
